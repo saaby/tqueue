@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+# Generic threaded command queuer.
+# Anders Kuhn Saaby
+# anders@saaby.com
+#
+# Simple usage example:
+# $ cat list_to_process | queuer.py -t 10 processor_script.sh
+
 from time import sleep
 from datetime import datetime
 from sys import stdin, stdout, stderr, exit
@@ -9,9 +16,6 @@ import threading
 import Queue
 import argparse
 import logging
-
-# Usage example:
-# $ cat list | queuer.py -t 10 processor_script.sh
 
 # Parse command arguments
 parser = argparse.ArgumentParser(description="Threaded command queuer - input is read from stdin")
