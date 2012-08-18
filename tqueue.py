@@ -27,15 +27,18 @@ parser.add_argument("-t", "--threads", type=int, default=4,
 parser.add_argument("-q", "--queue-length", type=int, default=0,
         help="Work queue length (default: THREADS x 10)")
 parser.add_argument("-l", "--loglevel", type=str, default="WARNING",
-        help="Log verbosity: NONE, ALERT, WARNING, INFO (default: WARNING)")
+        help="Log verbosity: CRITICAL, WARNING, INFO (default: WARNING)")
 parser.add_argument("-o", "--output-file", type=str, default="",
         help="Output file (default: stderr)")
+parser.add_argument("-a", "--abort-sub-processes", action="store_true",
+        help="Abort sub processes if CTRL-C is pressed (default: Sub processes are not aborted if CTRL-C is pressed)")
 
 cmd_line_args = parser.parse_args()
 
 #### Setup variables from cmd args ####
 num_worker_threads = cmd_line_args.threads # Number of workers
 command = cmd_line_args.command # processor command
+abort_sub_processes = cmd_line_args.abort_sub_processes # Should sub processes be aborted?
 
 # Sanitize -input and set logging parameters
 logger_filename = cmd_line_args.output_file
@@ -70,11 +73,15 @@ class Worker(threading.Thread):
     def run(self):
         global item_no
         global waiting_for_data
+        global abort_sub_processes
         logger.info("Starting...")
 
-        # Don't forward CTRL-C signals to subprocesses.
+        # Don't forward CTRL-C signals to subprocesses unless abort_sub_processes is selected.
         def preexec():
-            setpgrp()
+            if abort_sub_processes:
+                pass
+            else:
+                setpgrp()
 
         while not work_queue.empty() or waiting_for_data:
             # Pick an item for processing from the work queue
@@ -100,13 +107,19 @@ class Worker(threading.Thread):
                 logger.critical("Failed executing command: \"%s %s\": %s"
                         % (command, work_item, error.strerror))
             # Check if subprocess exited nonclean
-            if process.returncode != 0:
+            if process.returncode < 0:
+                logger.critical("Return value \"%d\" (Aborted), executing command: \"%s %s\""
+                        % (process.returncode, command, work_item))
+                logger.critical("Aborting!")
+                exit(1)
+            elif process.returncode != 0:
                 logger.warning("Return value \"%d\", executing command: \"%s %s\""
                         % (process.returncode, command, work_item))
 
             # Report processing task done
             work_queue.task_done()
             logger.info("Finished item : %d" % local_item)
+            # Check if we have been aborted
             if self.stopped():
                 logger.critical("Aborting!")
                 exit(1)
@@ -133,7 +146,16 @@ def start_workers(num_worker_threads):
     return workers
 
 def abort_workers(num_worker_threads):
-    logger.critical("Aborting! (Keyboard Interrupt), signalling graceful abort to worker threads.")
+    global abort_sub_processes
+    logger.critical("Aborting! (Keyboard Interrupt), signalling abort to worker threads.")
+
+    # Print if we are forwarding SIGINT to sub processes
+    if abort_sub_processes:
+        logger.warning("Forwarding SIGINT signal to sub processes.")
+    else:
+        logger.warning("Not forwarding SIGINT signal to sub processes, waiting for them to finish")
+
+    # Send stop signal to all workers
     for worker_id in range(num_worker_threads):
         logger.warning("Sending abort signal to Worker-%d" % worker_id)
         workers[worker_id].stop()
@@ -157,7 +179,6 @@ def wait_for_workers_to_finish():
 
 def reader():
     global aborting
-    name = "Reader"
     logger.info("Starting reader...")
 
     # Start reading from input
@@ -178,7 +199,7 @@ def reader():
         # Write status
         logger.info("Added item, queue length : %d" % work_queue.qsize())
         if work_queue.qsize() == work_queue_depth:
-            logger.info("Queue full, waiting for workers")
+            logger.debug("Queue full, waiting for workers")
 
 try:
     # Internal variables
