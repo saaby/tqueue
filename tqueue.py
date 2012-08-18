@@ -207,7 +207,6 @@ try:
     item_no = 0                    # Item number, used for simple item acounting in printouts
     waiting_for_data = True        # Are we still expecting input?
     aborting = False               # Are we aborting?
-    name = "Main"                  # Main thread name 
 
     # Hello world..
     logging.info("Starting...")
