@@ -94,13 +94,15 @@ class Worker(threading.Thread):
 
             # Run the processor command, make sure we catch exceptions
             try:
-                subprocess.Popen.wait(subprocess.Popen([command, work_item], stdin=None, preexec_fn = preexec))
-            except subprocess.CalledProcessError as error:
-                logger.warning("Return value \"%d\", executing command: \"%s\""
-                        % (error.returncode, ' '.join(error.cmd)))
+                process = subprocess.Popen([command, work_item], stdin=None, preexec_fn = preexec)
+                subprocess.Popen.wait(process)
             except OSError as error:
                 logger.critical("Failed executing command: \"%s %s\": %s"
                         % (command, work_item, error.strerror))
+            # Check if subprocess exited nonclean
+            if process.returncode != 0:
+                logger.warning("Return value \"%d\", executing command: \"%s %s\""
+                        % (process.returncode, command, work_item))
 
             # Report processing task done
             work_queue.task_done()
