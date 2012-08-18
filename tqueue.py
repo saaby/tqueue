@@ -136,6 +136,8 @@ class Worker(threading.Thread):
 def start_workers(num_worker_threads):
     workers = []
 
+    logger.info("Starting up %d worker threads." % num_worker_threads)
+
     # Create new threads
     for worker_id in range(num_worker_threads):
         workers.append(Worker(worker_id, "Worker-%d" % worker_id, worker_id))
