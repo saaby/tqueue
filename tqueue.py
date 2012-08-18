@@ -5,7 +5,7 @@
 # anders@saaby.com
 #
 # Simple usage example:
-# $ cat list_to_process | queuer.py -t 10 processor_script.sh
+# $ cat list_to_process | tqueue.py processor_script.sh
 
 from time import sleep
 from datetime import datetime
