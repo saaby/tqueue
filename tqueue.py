@@ -11,6 +11,7 @@ from time import sleep
 from datetime import datetime
 from sys import stdin, stdout, stderr, exit
 from random import randint
+from os import setpgrp
 import subprocess
 import threading
 import Queue
@@ -70,6 +71,11 @@ class Worker(threading.Thread):
         global item_no
         global waiting_for_data
         logger.info("Starting...")
+
+        # Don't forward CTRL-C signals to subprocesses.
+        def preexec():
+            setpgrp()
+
         while not work_queue.empty() or waiting_for_data:
             # Pick an item for processing from the work queue
             # continue if we don't get an item for some time
@@ -88,7 +94,7 @@ class Worker(threading.Thread):
 
             # Run the processor command, make sure we catch exceptions
             try:
-                subprocess.check_call([command, work_item], stdin=None)
+                subprocess.Popen.wait(subprocess.Popen([command, work_item], stdin=None, preexec_fn = preexec))
             except subprocess.CalledProcessError as error:
                 logger.warning("Return value \"%d\", executing command: \"%s\""
                         % (error.returncode, ' '.join(error.cmd)))
@@ -100,7 +106,7 @@ class Worker(threading.Thread):
             work_queue.task_done()
             logger.info("Finished item : %d" % local_item)
             if self.stopped():
-                logger.warning("Aborting!")
+                logger.critical("Aborting!")
                 exit(1)
 
         # Thread finished
