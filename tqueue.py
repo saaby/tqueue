@@ -32,6 +32,7 @@ parser.add_argument("-o", "--output-file", type=str, default="",
         help="Output file (default: stderr)")
 parser.add_argument("-a", "--abort-sub-processes", action="store_true",
         help="Abort sub processes if CTRL-C is pressed (default: Sub processes are not aborted if CTRL-C is pressed)")
+parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
 cmd_line_args = parser.parse_args()
 
