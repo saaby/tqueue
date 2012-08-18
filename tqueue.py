@@ -32,7 +32,7 @@ parser.add_argument("-o", "--output-file", type=str, default="",
         help="Output file (default: stderr)")
 parser.add_argument("-a", "--abort-sub-processes", action="store_true",
         help="Abort sub processes if CTRL-C is pressed (default: Sub processes are not aborted if CTRL-C is pressed)")
-parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+parser.add_argument('--version', action='version', version="%(prog)s 1.0")
 
 cmd_line_args = parser.parse_args()
 
@@ -47,9 +47,9 @@ logger_filename = cmd_line_args.output_file
 logger = logging.getLogger(__name__)
 numeric_log_level = getattr(logging, cmd_line_args.loglevel.upper(), None)
 if not isinstance(numeric_log_level, int):
-    raise ValueError('Invalid log level: %s' % cmd_line_args.loglevel)
-logging.basicConfig(format='%(asctime)s : %(threadName)-10s : %(levelname)-7s : %(message)s',
-        datefmt='%m-%d-%Y %H:%M:%S',
+    raise ValueError("Invalid log level: %s" % cmd_line_args.loglevel)
+logging.basicConfig(format="%(asctime)s : %(threadName)-10s : %(levelname)-7s : %(message)s",
+        datefmt="%m-%d-%Y %H:%M:%S",
         level=numeric_log_level,
         filename=logger_filename)
 
