@@ -1,6 +1,6 @@
 #!/bin/bash
 
 echo "Processing: $1"
-sleep $[$[RANDOM] % 5]
+sleep $1
 echo "Finished: $1"
 exit 0
