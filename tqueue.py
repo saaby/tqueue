@@ -204,46 +204,56 @@ def reader():
         if work_queue.qsize() == work_queue_depth:
             logger.debug("Queue full, waiting for workers")
 
-try:
-    # Internal variables
-    thread_lock = threading.Lock() # Thread sync mutex
-    item_no = 0                    # Item number, used for simple item acounting in printouts
-    waiting_for_data = True        # Are we still expecting input?
-    aborting = False               # Are we aborting?
+def main():
+    global thread_lock
+    global item_no
+    global waiting_for_data
+    global aborting
+    global work_queue
 
-    # Hello world..
-    logging.info("Starting...")
+    try:
+        # Internal variables
+        thread_lock = threading.Lock() # Thread sync mutex
+        item_no = 0                    # Item number, used for simple item acounting in printouts
+        waiting_for_data = True        # Are we still expecting input?
+        aborting = False               # Are we aborting?
 
-    # Create work queue
-    work_queue = Queue.Queue(work_queue_depth)
-    logger.info("Work queue created, max length: %d" % work_queue_depth)
+        # Hello world..
+        logging.info("Starting...")
 
-    # Start worker threads
-    workers = start_workers(num_worker_threads)
+        # Create work queue
+        work_queue = Queue.Queue(work_queue_depth)
+        logger.info("Work queue created, max length: %d" % work_queue_depth)
 
-    # Start reading input data
-    reader()
+        # Start worker threads
+        workers = start_workers(num_worker_threads)
 
-    # At this point we are not getting any more data
-    # - workers are listening for this signal to shut down
-    waiting_for_data = False
+        # Start reading input data
+        reader()
 
-    # If we received an abort signal while reading, abort workers
-    if aborting:
-        abort_workers(num_worker_threads)
+        # At this point we are not getting any more data
+        # - workers are listening for this signal to shut down
+        waiting_for_data = False
+
+        # If we received an abort signal while reading, abort workers
+        if aborting:
+            abort_workers(num_worker_threads)
     
-    wait_for_workers_to_finish()
+        wait_for_workers_to_finish()
 
-except KeyboardInterrupt:
-    aborting = True
-    abort_workers(num_worker_threads)
-    wait_for_workers_to_finish()
+    except KeyboardInterrupt:
+        aborting = True
+        abort_workers(num_worker_threads)
+        wait_for_workers_to_finish()
 
-finally:
-    # All done, lets do a sane exit
-    if aborting:
-        logger.critical("All workers aborted, exiting.")
-        exit(1)
-    else:
-        logger.info("All workers finished, exiting.")
-        exit(0)
+    finally:
+        # All done, lets do a sane exit
+        if aborting:
+            logger.critical("All workers aborted, exiting.")
+            exit(1)
+        else:
+            logger.info("All workers finished, exiting.")
+            exit(0)
+
+if __name__ == "__main__":
+    main()
