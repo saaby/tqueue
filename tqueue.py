@@ -41,9 +41,19 @@ num_worker_threads = cmd_line_args.threads # Number of workers
 command = cmd_line_args.command # processor command
 abort_sub_processes = cmd_line_args.abort_sub_processes # Should sub processes be aborted?
 
+# Implement default of threads*10 queue-length, or assign defined
+# We are not allowing a queue depth of 0, thats a hack.
+if cmd_line_args.queue_length == 0:
+    work_queue_depth = num_worker_threads * 10
+else:
+    work_queue_depth = cmd_line_args.queue_length
+
 # Sanitize -input and set logging parameters
 logger_filename = cmd_line_args.output_file
 
+## Done configuring program ##
+
+# Create logger object
 logger = logging.getLogger(__name__)
 numeric_log_level = getattr(logging, cmd_line_args.loglevel.upper(), None)
 if not isinstance(numeric_log_level, int):
@@ -52,15 +62,6 @@ logging.basicConfig(format="%(asctime)s : %(threadName)-10s : %(levelname)-7s : 
         datefmt="%m-%d-%Y %H:%M:%S",
         level=numeric_log_level,
         filename=logger_filename)
-
-# Implement default of threads*10 queue-length, or assign defined
-# We are not allowing a queue depth of 0, thats a hack.
-if cmd_line_args.queue_length == 0:
-    work_queue_depth = num_worker_threads * 10
-else:
-    work_queue_depth = cmd_line_args.queue_length
-
-## Done configuring program ##
 
 class Worker(threading.Thread):
     def __init__(self, threadID, name, counter):
